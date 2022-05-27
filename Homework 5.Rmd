@@ -1,18 +1,15 @@
 ---
-title: "Homework 5"
+title: Homework 5
 subtitle: <center> <h1>Multiple Linear Regression - ANCOVA </h1> </center>
 author: <center> < Nicholas Chan > <center>
 output: html_document
 ---
 
-<style type="text/css">
-h1.title {
-  font-size: 40px;
-  text-align: center;
-}
-</style>
+# Homework 5
 
-```{r setup, include=FALSE}
+h1.title { font-size: 40px; text-align: center; }
+
+```
 library(tidyverse)
 library(ggfortify)  # plot lm objects using ggplot instead of base R
 library(alr4)  # UN11 data - also loads car
@@ -22,47 +19,44 @@ library(corrplot)
 sz = 16
 ```
 
-## Data and Description
+### Data and Description
 
 **Note: You do not need to worry about making your plots look professional for this assignment. They should still, obviously, be readable and clearly labeled, but you do not need to change the x- and y-axis limits or tick marks. I trust you know how to do this by now, and this will (hopefully) save you some time.**
 
-Agriculturalists are interested in the effects of certain agroeconomic policies on values of farmland.  In Minnesota, data were recorded on every farm sale in 6 economic regions from 2002-2011 that either had land enrolled in the federal Conservation Reserve Program (CRP) or had no restrictions. CRP enrollment is for a fixed period during which farmers agree not to grow crops for a fixed payment. This can effect sale price of land since buyers have fewer choices on use of land that could lower values, but also have guaranteed income for a fixed period that could raise values.
+Agriculturalists are interested in the effects of certain agroeconomic policies on values of farmland. In Minnesota, data were recorded on every farm sale in 6 economic regions from 2002-2011 that either had land enrolled in the federal Conservation Reserve Program (CRP) or had no restrictions. CRP enrollment is for a fixed period during which farmers agree not to grow crops for a fixed payment. This can effect sale price of land since buyers have fewer choices on use of land that could lower values, but also have guaranteed income for a fixed period that could raise values.
 
-
-Variable     | Description
------------- | -------------------------------------------------------------------------------------
-acrePrice    | Sale price in dollars per acre, adjusted to a common date within year
-region       | A factor with levels giving the geographic names of six economic regions of Minnesota
-year         | Year of sale
-acres        | Size of property, acres
-tillable     | Percentage of farm rated arable
-improvements | Percentage of property value due to buildings and other improvements
-financing    | Type of financing either title transfer or seller finance
-crp          | Enrolled if any part of the acreage is enrolled in the (CRP), and none otherwise
-crpPct       | Percentage of land in CRP
-productivity | A numeric score between 1 and 100 with larger values indicating more productive land
+| Variable     | Description                                                                           |
+| ------------ | ------------------------------------------------------------------------------------- |
+| acrePrice    | Sale price in dollars per acre, adjusted to a common date within year                 |
+| region       | A factor with levels giving the geographic names of six economic regions of Minnesota |
+| year         | Year of sale                                                                          |
+| acres        | Size of property, acres                                                               |
+| tillable     | Percentage of farm rated arable                                                       |
+| improvements | Percentage of property value due to buildings and other improvements                  |
+| financing    | Type of financing either title transfer or seller finance                             |
+| crp          | Enrolled if any part of the acreage is enrolled in the (CRP), and none otherwise      |
+| crpPct       | Percentage of land in CRP                                                             |
+| productivity | A numeric score between 1 and 100 with larger values indicating more productive land  |
 
 For this assignment, you will focus on the price per acre and investigate how this depends on the region, percentage that is enrolled in CRP, and type of financing.
 
-#### 0. Replace the text "< PUT YOUR NAME HERE >" (above next to "author:") with your full name.
+**0. Replace the text "< PUT YOUR NAME HERE >" (above next to "author:") with your full name.**
 
-#### 1. Load the `alr4` library, and examine the first 10 rows of the data set `MinnLand`. You may need to install it first, but do not include the installation code in your assignment.  
+**1. Load the `alr4` library, and examine the first 10 rows of the data set `MinnLand`. You may need to install it first, but do not include the installation code in your assignment.**
 
-```{r}
+```
 MinnLand <- MinnLand
 MinnLand%>%
   head(10)
 ```
 
-#### 2. What is the response variable, and is it numeric or categorical? What are the predictors, and are they continuous or categorical?
+**2. What is the response variable, and is it numeric or categorical? What are the predictors, and are they continuous or categorical?**
 
-Response: Acre Price
-Categorical Predictors: Region, Financing, Year,
-Continuous Predictors: crpPct, Improvements, Acres, Productivity, tillable
+Response: Acre Price Categorical Predictors: Region, Financing, Year, Continuous Predictors: crpPct, Improvements, Acres, Productivity, tillable
 
-#### 3. Produce some plots/numeric summaries to examine the relationships a) between the response and each of the predictors and b) between the predictors themselves. Provide some brief comments regarding any interesting features you see. **Note: For categorical/categorical comparisons, a table of counts with categories of each variable forming the rows/columns is a nice summary.  For categorical/numeric comparisons, boxplots of the numeric variable separated by groups is effective.**
+**3. Produce some plots/numeric summaries to examine the relationships a) between the response and each of the predictors and b) between the predictors themselves. Provide some brief comments regarding any interesting features you see. Note: For categorical/categorical comparisons, a table of counts with categories of each variable forming the rows/columns is a nice summary. For categorical/numeric comparisons, boxplots of the numeric variable separated by groups is effective.**
 
-```{r}
+```
 #RESPONSE AND EACH PREDICTOR
 MinnLand%>%
   ggplot(mapping = aes(x = crpPct, y = acrePrice))+
@@ -91,30 +85,25 @@ MinnLand%>%
   ggplot(mapping = aes(x = crpPct, y = region))+
   geom_boxplot()+
   theme(aspect.ratio = 1)
-
 ```
 
 The Northwest, and West regions have a crpPct that is almost a complete line between 0 and 100, there are also more data from those regions. Also both financing categories are highly right skewed and same as the regions. Our plot has a lot of points at 0 of crpPct and seems to have a slight curve.
 
-
-#### 4. Write out the multiple linear regression model (using Greek letters/parameters) that represents, for each fixed value of `region`, a simple linear regression model with `crpPct` as a predictor, with the same slope for each differnt level of `region` (we are ignoring `financing` for now). Use variable names that are descriptive (not $y$, $x_1$, etc.). Remember, you will need to use dummy variables for `region`, so make sure to define these in your model. **USE "Northwest" AS THE BASELINE/DEFAULT CATEGORY**.
+**4. Write out the multiple linear regression model (using Greek letters/parameters) that represents, for each fixed value of `region`, a simple linear regression model with `crpPct` as a predictor, with the same slope for each differnt level of `region` (we are ignoring `financing` for now). Use variable names that are descriptive (not $y$, $x\_1$, etc.). Remember, you will need to use dummy variables for `region`, so make sure to define these in your model. USE "Northwest" AS THE BASELINE/DEFAULT CATEGORY.**
 
 $$
-\widehat{\text{Acre Price}}_i = \beta_0 + \beta_1 * \text{crpPercent}_i + \beta_2 * \text{SouthEast}_i + \beta_3 * \text{SouthCentral}_i  + \beta_4 * \text{SouthWest}_i
-+ \beta_5 * \text{Central}_i + \beta_6 * \text{WestCentral}_i 
+\widehat{\text{Acre Price}}_i = \beta_0 + \beta_1 * \text{crpPercent}_i + \beta_2 * \text{SouthEast}_i + \beta_3 * \text{SouthCentral}_i + \beta_4 * \text{SouthWest}_i + \beta_5 * \text{Central}_i + \beta_6 * \text{WestCentral}_i
 $$
 
-
-#### 5. Fit your multiple linear regression model from question 4.
-
-```{r}
-lm.acre <- lm(data = MinnLand, acrePrice ~ crpPct + region)
+**5. Fit your multiple linear regression model from question 4.**
 
 ```
+lm.acre <- lm(data = MinnLand, acrePrice ~ crpPct + region)
+```
 
-#### 6. Using diagnostic plots, verify that the linearity and constant variance assumptions hold, at least roughly, but that the normality assumption is violated.  Using the Box-Cox transformation, show that the (natural) logarithm transformation is a good idea to try for the response (even though it is not in the confidence interval).
+**6. Using diagnostic plots, verify that the linearity and constant variance assumptions hold, at least roughly, but that the normality assumption is violated. Using the Box-Cox transformation, show that the (natural) logarithm transformation is a good idea to try for the response (even though it is not in the confidence interval).**
 
-```{r fig.align='center'}
+```
 avPlots(lm.acre)
 
 autoplot(lm.acre, which = 1, ncol = 1, nrow = 1) +
@@ -153,23 +142,20 @@ ggplot(data = MinnLand, mapping = aes(x = residuals)) +
   labs(x = "Residuals", y = "Density", title = "Residual Histogram")
 
 boxCox((MinnLand$acrePrice) ~ MinnLand$crpPct + MinnLand$region)
-
 ```
 
-#### 7. Create a color-coded scatterplot to visualize the relationship between the (now log-transformed) response and numeric predictor, using different colors/shapes for different regions.
+**7. Create a color-coded scatterplot to visualize the relationship between the (now log-transformed) response and numeric predictor, using different colors/shapes for different regions.**
 
-```{r, fig.align='center'}
+```
 MinnLand%>%
 ggplot(mapping = aes(x = crpPct, y = log(acrePrice)))+
   geom_point(aes(color = region))
 
-
 ```
 
+**8. Refit the multiple linear regression, now with a log-transformed response. Add the fitted regression lines for each group to your plot from question 7.**
 
-#### 8. Refit the multiple linear regression, now with a log-transformed response.  Add the fitted regression lines for each group to your plot from question 7.
-
-```{r}
+```
 lmy.acre <- lm(data = MinnLand, log(acrePrice) ~ crpPct + region)
 summary(lmy.acre)
 MinnLand$parFit <- lmy.acre$fitted.values
@@ -181,62 +167,59 @@ parPlot <- ggplot(data = MinnLand, mapping = aes(x = crpPct, y = log(acrePrice),
        x = "Percentage of land in CRP",
        y = "Acre Price (US dollars, log scale)")
 parPlot
-
 ```
 
-#### 9. Interpret the F-statistic for the global F-test of no effects.
+**9. Interpret the F-statistic for the global F-test of no effects.**
 
 Because our p-value is less than .05 we reject the null hypothesis and conclude that there is at least one predictor variable that helps predict the average acre price.
 
-#### 9. Briefly interpret the intercept. ### look at this one again
+**9. Briefly interpret the intercept. ### look at this one again**
 
-We estimate that the average acre price for a piece of land with 0 percent crp percent costs  `e^(6.88)` dollars.
+We estimate that the average acre price for a piece of land with 0 percent crp percent costs `e^(6.88)` dollars.
 
-#### 10. Briefly interpret the coefficient for the `crpPct` variable.  Remember to take into account that the response is log-transformed.
+**10. Briefly interpret the coefficient for the `crpPct` variable. Remember to take into account that the response is log-transformed.**
 
 When we hold all regions fixed, we estimate the average increase of acre price to be `100*(e^(-0.00487) - 1)` for every 1 percent increase of crpPct.
 
-#### 11. Briefly interpret the coefficient for the West Central region dummy variable.
+**11. Briefly interpret the coefficient for the West Central region dummy variable.**
 
 After adjusting for crpPct, the average acre price belonging to the West Central region is estimated to be `e^(.7566)` dollars lower than that of North Western regions, and this difference is statistically significant.
 
-#### 12. Briefly interpret the coefficient for the South East region dummy variable.
+**12. Briefly interpret the coefficient for the South East region dummy variable.**
 
 After adjusting for crpPct, the average acre price belonging to the South East region is estimated to be `e^(1.264)` dollars lower than that of North Western regions, and this difference is statistically significant.
 
-#### 13. Create 95% confidence intervals for all coefficients (use the `confint` function); these do not need to be simultaneous.
+**13. Create 95% confidence intervals for all coefficients (use the `confint` function); these do not need to be simultaneous.**
 
-```{r}
+```
 CIslope95 <- round(confint(lmy.acre, level = 0.95), 2)
 CIslope95
 ```
 
-#### 14. Briefly interpret the 95% confidence interval for the coefficient corresponding to the Central region dummy variable.
+**14. Briefly interpret the 95% confidence interval for the coefficient corresponding to the Central region dummy variable.**
 
 After adjusting for crpPct, we are 95% confident that the true change in dollars for the Central region compared to the North Western region is withing the range `e^(1.02)` to `e^(1.07)`.
 
-#### 15. Use the `anova` function to conduct a hypothesis test that tests some coefficients simultaneously (i.e., a partial $F$-test). Specifically, test if `region` has a significant effect on the average response after controlling for `crpPct`. What do you conclude from the result of the test? Hint: you will need to create another linear model and compare it with the one you fit previously.
+**15. Use the `anova` function to conduct a hypothesis test that tests some coefficients simultaneously (i.e., a partial $F$-test). Specifically, test if `region` has a significant effect on the average response after controlling for `crpPct`. What do you conclude from the result of the test? Hint: you will need to create another linear model and compare it with the one you fit previously.**
 
-```{r}
+```
 lmy2.acre <- lm(log(acrePrice) ~ region, data = MinnLand)
 anova( lmy2.acre, lmy.acre)
 ```
 
 Because our p-value is much less than .05 we reject the null hypothesis and conclude that crpPct is significant and help us estimate the average acre price.
 
+**16. Fit a nonparallel multiple linear regression model that allows for the effect of `crpPct` to differ across regions.**
 
-#### 16. Fit a nonparallel multiple linear regression model that allows for the effect of `crpPct` to differ across regions.  
-
-```{r, fig.align='center'}
+```
 nonpar.acre <- lm(log(acrePrice) ~ crpPct*region, data = MinnLand)
 summary(nonpar.acre)
 MinnLand$npar.fitted.values <- nonpar.acre$fitted.values
 ```
 
+**17. Add these newly fitted nonparallel regression lines for each group to your plot from question 7, and compare it side-by-side with your plot from question 8. (Hint: The function `grid.arrange` from the `gridExtra` package can be used to place two `ggplot` objects side by side.)**
 
-#### 17. Add these newly fitted nonparallel regression lines for each group to your plot from question 7, and compare it side-by-side with your plot from question 8. (Hint: The function `grid.arrange` from the `gridExtra` package can be used to place two `ggplot` objects side by side.)
-
-```{r fig.width=12}
+```
 nparPlot <- ggplot(data = MinnLand, mapping = aes(x = crpPct, y = log(acrePrice),
                                   color = region, shape = region)) +
   geom_point() +
@@ -248,31 +231,31 @@ nparPlot
 grid.arrange(parPlot, nparPlot, ncol = 2)
 ```
 
-#### 18.  By examining the summary of your fitted nonparallel model, does there seem to be any evidence that the effect of `crpPct` is different between any regions?  Justify your answer.
+**18. By examining the summary of your fitted nonparallel model, does there seem to be any evidence that the effect of `crpPct` is different between any regions? Justify your answer.**
 
-```{r}
+```
 summary(nonpar.acre)
 ```
 
 Yes, because most of the interactions have a p-value less than .05.
 
-#### 19. Use the `anova` function to formally test whether allowing for different slopes between groups is preferable to the parallel model. What do you conclude?
+**19. Use the `anova` function to formally test whether allowing for different slopes between groups is preferable to the parallel model. What do you conclude?**
 
-```{r}
+```
 anova( lmy.acre, nonpar.acre)
 ```
 
 Yes because our p-value is less than .05 we can reject the null hypothesis and conclude that the individual slopes for each region are important and help in estimating the average acre price.
 
-#### 20. Using the better of the two models based on question 19, add a main effect for the binary variable `financing` to produce a new model.  Interpret the estimated coefficient for `financing`, and determine whether or not it is significantly different from 0.  What does this mean in the context of these data?
+**20. Using the better of the two models based on question 19, add a main effect for the binary variable `financing` to produce a new model. Interpret the estimated coefficient for `financing`, and determine whether or not it is significantly different from 0. What does this mean in the context of these data?**
 
-```{r}
+```
 last.lm <- lm(log(acrePrice) ~  crpPct*region + financing , data = MinnLand)
 summary(last.lm)
 ```
 
 After adjusting for region and crpPct, we estimate the average acre price to decrease in dollars for a seller financed sale to be `e^(.111)` compared to title transfer sale, this comparison is statistically significant.
 
-#### 21. Briefly summarize (1) the purpose of this data set and analysis and (2) what you learned about this data set from your analysis. Write your response as if you were addressing a non-statistician (do not include any numbers or software output).
+**21. Briefly summarize (1) the purpose of this data set and analysis and (2) what you learned about this data set from your analysis. Write your response as if you were addressing a non-statistician (do not include any numbers or software output).**
 
 In this data we learned how to improve our estimates when we have multiple variable to use in estimating our data. I learned how to analyze this and test these different variables and combinations of variables to find a good way to estimate the acre price of land I also learned how to interpret different type of variables (continuous and categorical)

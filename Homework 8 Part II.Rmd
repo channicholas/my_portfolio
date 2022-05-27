@@ -1,18 +1,15 @@
 ---
-title: "Homework 8 - Part 2"
+title: Homework 8 - Part 2
 subtitle: <center> <h1>Poisson Regression</h1> </center>
 author: <center> < Nicholas Chan > <center>
 output: html_document
 ---
 
-<style type="text/css">
-h1.title {
-font-size: 40px;
-text-align: center;
-}
-</style>
+# Homework 8 - Part 2
 
-```{r setup, include=FALSE}
+h1.title { font-size: 40px; text-align: center; }
+
+```
 library(glmnet)
 library(ggplot2)
 library(corrplot)
@@ -24,7 +21,7 @@ library(glmnet)  # for ridge, lasso, and elastic net
 sz <- 15
 ```
 
-## Data and Description
+### Data and Description
 
 **NOTE: For this assignment, you do not need to make your graphs/plots look "pretty", meaning you do not need to worry about changing the axis limits, relabeling axes, etc.**
 
@@ -34,53 +31,47 @@ The bike-sharing rental process is highly correlated with environmental and seas
 
 The data set has information for 731 days and contains the following variables:
 
-Variable   | Description
----------- | -------------
-season     | Season (Fall, Spring, Summer, Winter)
-yr         | Year (2011, 2012)
-holiday    | Was the day a holiday (Yes/No)?
-workingday | Was the day a working day (Yes/No)? (Yes if the day is neither a weekend nor a holiday)
-weathersit | Weather (Clear, Light Precip, Misty)
-temp       | Normalized temperature in Celsius
-hum        | Normalized humidity
-windspeed  | Normalized windspeed
-cnt        | Number of bikes rented
+| Variable   | Description                                                                             |
+| ---------- | --------------------------------------------------------------------------------------- |
+| season     | Season (Fall, Spring, Summer, Winter)                                                   |
+| yr         | Year (2011, 2012)                                                                       |
+| holiday    | Was the day a holiday (Yes/No)?                                                         |
+| workingday | Was the day a working day (Yes/No)? (Yes if the day is neither a weekend nor a holiday) |
+| weathersit | Weather (Clear, Light Precip, Misty)                                                    |
+| temp       | Normalized temperature in Celsius                                                       |
+| hum        | Normalized humidity                                                                     |
+| windspeed  | Normalized windspeed                                                                    |
+| cnt        | Number of bikes rented                                                                  |
 
 The data can be found in the Bikes data set on Canvas. Download Bikes.csv, and put it in the same folder as this R Markdown file.
 
-#### 0. Replace the text "< PUT YOUR NAME HERE >" (above next to "author:") with your full name.
+**0. Replace the text "< PUT YOUR NAME HERE >" (above next to "author:") with your full name.**
 
-#### 1. Read in the data set, and call the data frame "bikes".  
+**1. Read in the data set, and call the data frame "bikes".**
 
-```{r}
+```
 bikes <- read.csv("Data/Bikes.csv")
 ```
 
-#### 2. Convert the yr variable to a factor. Hint: use `as.factor` and override the current yr column in the data set.
+**2. Convert the yr variable to a factor. Hint: use `as.factor` and override the current yr column in the data set.**
 
-```{r}
+```
 bikes$yr <- as.factor(bikes$yr)
 ```
 
-#### 3. Briefly explain why traditional multiple linear regression methods are not suitable for *this* data set.
+**3. Briefly explain why traditional multiple linear regression methods are not suitable for **_**this**_** data set.**
 
 Traditional multiple linear regression is not appropriate here because the response is discrete and follows a poisson distribution, better than a normal distribution.
 
-#### 4. Write out the Poisson regression model (random component, systematic component, and link) for this data set using all parameters. You should use parameters/Greek letters (NOT the "fitted" model using numbers since you have not fit a model yet). Be sure to use indicator variables, if necessary. You may need to split the equation on multiple lines to have it render properly as an HTML file.
+**4. Write out the Poisson regression model (random component, systematic component, and link) for this data set using all parameters. You should use parameters/Greek letters (NOT the "fitted" model using numbers since you have not fit a model yet). Be sure to use indicator variables, if necessary. You may need to split the equation on multiple lines to have it render properly as an HTML file.**
 
 $$
-\text{Number  of Bikes Rented}_i \text{ ~ } \text{Poisson(Expected Number of Bikes Rented
-}_\_i\text{)}\\
-\eta_i = \beta_0 + \beta_1 * \text{Season}_i + \beta_2 * \text{Year}_i +
-\beta_3 * \text{Holiday}_i + \beta_4 * \text{Working Day}_i +
-\beta_5 * \text{Weathersit}_i + \beta_6 * \text{Temperature}_i +
-\beta_7 * \text{Humidity}_i +\beta_8 * \text{WindSpeed}_i \\
-\eta_i = g(\lambda_i) = log(\lambda_i)
+\text{Number of Bikes Rented}_i \text{ ~ } \text{Poisson(Expected Number of Bikes Rented }_\_i\text{)}\\ \eta_i = \beta_0 + \beta_1 * \text{Season}_i + \beta_2 * \text{Year}_i + \beta_3 * \text{Holiday}_i + \beta_4 * \text{Working Day}_i + \beta_5 * \text{Weathersit}_i + \beta_6 * \text{Temperature}_i + \beta_7 * \text{Humidity}_i +\beta_8 * \text{WindSpeed}_i \\ \eta_i = g(\lambda_i) = log(\lambda_i)
 $$
 
-#### 5. Fit the Poisson regression model from the previous question, print the summary output, and compute the VIFs.  Does multicollinearity seem to have a large effect on the estimates?
+**5. Fit the Poisson regression model from the previous question, print the summary output, and compute the VIFs. Does multicollinearity seem to have a large effect on the estimates?**
 
-```{r, fig.align='center'}
+```
 Bikes <- bikes[,-9] 
 bike.lm <- glm(cnt ~ ., data = bikes, family = poisson(link = 'log'))
 summary(bike.lm)
@@ -89,9 +80,9 @@ vif(bike.lm)
 
 Multicollinearity does not seem to be a large concern here, because our variance inflation factors are relatively small.
 
-#### 6. Plot the logarithm of daily counts against the estimated systematic component.  Does the link function seem appropriate?
+**6. Plot the logarithm of daily counts against the estimated systematic component. Does the link function seem appropriate?**
 
-```{r, fig.align='center'}
+```
 bikesPredict <- predict(bike.lm, type = 'link')
 ggplot(data = bikes, mapping = aes(x = bikesPredict, y= log(cnt)))+
   geom_point()
@@ -99,29 +90,30 @@ ggplot(data = bikes, mapping = aes(x = bikesPredict, y= log(cnt)))+
 
 Yes, the graph appears roughly linear, so the link seems to be valid.
 
-#### 7. Compute Pearson's $\chi^2$ and use it to determine whether or not there is overdispersion in the model.  Explain how overdispersion violates the model assumptions for Poisson regression.
-```{r, fig.align='center'}
+**7. Compute Pearson's $\chi^2$ and use it to determine whether or not there is overdispersion in the model. Explain how overdispersion violates the model assumptions for Poisson regression.**
+
+```
 sum(residuals(bike.lm, type = 'pearson')^2)
 ```
 
 There does seem to be over dispersion here, because our computed metric is large. Over dispersion violates our assumption that we are following a poisson model, because there is more data in the tails of the distribution than there normally is in a poisson distribution.
 
-### Regardless of your assessment of the assumptions, for the purposes of this assignment, we will proceed as if all assumptions were met.
+#### Regardless of your assessment of the assumptions, for the purposes of this assignment, we will proceed as if all assumptions were met.
 
-#### 8. For the coefficient for temp, compute and intepret (and output) $\beta_{temp}$ (pull this value from the model output) and $\exp\{\beta_{temp}\}$.
+**8. For the coefficient for temp, compute and intepret (and output) $\beta\_{temp}$ (pull this value from the model output) and $\exp{\beta\_{temp\}}$.**
 
-```{r, fig.align='center'}
+```
 bike.lm$coefficients[10]
 exp(bike.lm$coefficients[10])
 ```
 
-*Interpretation 1:* If the temperature increase by one degree, holding all else constant, then the expected number of bike rentals increases by a log odds factor of 1.22.
+_Interpretation 1:_ If the temperature increase by one degree, holding all else constant, then the expected number of bike rentals increases by a log odds factor of 1.22.
 
-*Interpretation 2:* If the temperature increases by one degree, holding all else constant, then the expected number of bike rentals increases by a factor of 3.39. 
+_Interpretation 2:_ If the temperature increases by one degree, holding all else constant, then the expected number of bike rentals increases by a factor of 3.39.
 
-#### 9. Create (and output) 95% confidence intervals for $\beta_k$ and $\exp\{\beta_k\}$ for all predictors using the `confint` function, and provide an interpretation for the intervals corresponding to the predictor holiday.
+**9. Create (and output) 95% confidence intervals for $\beta\_k$ and $\exp{\beta\_k}$ for all predictors using the `confint` function, and provide an interpretation for the intervals corresponding to the predictor holiday.**
 
-```{r, fig.align='center'}
+```
 confint(bike.lm, 1:12)
 exp(confint(bike.lm, 1:12))
 ```
@@ -130,9 +122,9 @@ We are 95% confident that the true expected number of bikes rented on a holiday 
 
 We are 95% confident that the true expected number of bikes rented on a holiday decreases on average by a factor between 0.8413 to 0.8537 compared to a non-holiday.
 
-#### 10. Calculate (and output) an estimate and 95% confidence interval for the predicted average number of bike rentals for a day where season = "Spring", yr = "2012", holiday = "No", workingday = "Yes", weathersit = "Misty", temp = 0.34, hum = 0.80, and windspeed = 0.18. Note that you may not need to use all of these values depending on the variables you chose to include in your model. *Interpret the interval.*
+**10. Calculate (and output) an estimate and 95% confidence interval for the predicted average number of bike rentals for a day where season = "Spring", yr = "2012", holiday = "No", workingday = "Yes", weathersit = "Misty", temp = 0.34, hum = 0.80, and windspeed = 0.18. Note that you may not need to use all of these values depending on the variables you chose to include in your model. **_**Interpret the interval.**_
 
-```{r, fig.align='center'}
+```
 LogOdds <- predict(bike.lm, newdata=data.frame(season = "Spring", yr = "2012", holiday = "No", workingday = "Yes", weathersit = "Misty", temp = 0.34, hum = 0.80, windspeed = 0.18), type = "link", se.fit = TRUE)
 LogOddsCI <- LogOdds$fit + c(-1, 1)*qnorm(.975)*LogOdds$se.fit
 
@@ -141,16 +133,15 @@ LogOddsCI <- LogOdds$fit + c(-1, 1)*qnorm(.975)*LogOdds$se.fit
 
 We are 95% confident that the true expected average of bike rentals in spring, in 2012, not during a holiday, during a working day, while it is misty, while the temperature is .34 standards deviations above the normal, the humidity is .8 standard deviations above the normal and the wind speed is .18 standard deviations above the normal; decreases by a factor between the interval 0.9996728 to 0.9996752.
 
+**11. Compute (and output) the test statistic and p-value for assessing the hypothesis that none of the weather predcitors (weathersit, temp, hum, and windspeed) have an effect on the average daily bike rentals after accounting for the other predictors.. Based on the results, what do you conclude?**
 
-#### 11. Compute (and output) the test statistic and p-value for assessing the hypothesis that none of the weather predcitors (weathersit, temp, hum, and windspeed) have an effect on the average daily bike rentals after accounting for the other predictors.. Based on the results, what do you conclude?
-
-```{r, fig.align='center'}
+```
 red.lm <- glm(data = bikes, cnt ~ season + yr + holiday + workingday, family = poisson(link = "log"))
 anova(red.lm,bike.lm, test = "Chisq")
 ```
 
 Because our p-value is less than alpha, we reject the null hypothesis and conclude that there is at least one more predictor that is important in predicting the expected average amount of bikes rented other than season, year, working day, and holiday.
 
+**12. Briefly summarize (1) the purpose of this data set and analysis and (2) what you learned about this data set from your analysis. Write your response as if you were addressing a non-statistician (do not include any numbers or software output).**
 
-#### 12. Briefly summarize (1) the purpose of this data set and analysis and (2) what you learned about this data set from your analysis. Write your response as if you were addressing a non-statistician (do not include any numbers or software output).
-I learned how to predict the expected number of a response variable that is dichotomous with a fixed population. The purpose was to learn how to do that and predict bike rentals and interpret results of our predictors. 
+I learned how to predict the expected number of a response variable that is dichotomous with a fixed population. The purpose was to learn how to do that and predict bike rentals and interpret results of our predictors.

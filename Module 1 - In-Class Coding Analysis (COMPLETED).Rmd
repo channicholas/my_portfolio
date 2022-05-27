@@ -4,19 +4,16 @@ subtitle: <center> <h1>In-Class Coding Analysis</h1> </center>
 output: html_document
 ---
 
-<style type="text/css">
-h1.title {
-  font-size: 40px;
-  text-align: center;
-}
-</style>
+# Module 1 - Simple Linear Regression
 
-```{r setup, include=FALSE}
+h1.title { font-size: 40px; text-align: center; }
+
+```
 # load packages here
 library(tidyverse)
 ```
 
-## Data and Description
+### Data and Description
 
 **This is the same data set used in the Module 1 Course Notes. You can check all of the code you create here with the output from the course notes to verify you are getting the correct results.**
 
@@ -24,9 +21,9 @@ Recent increases in gas prices make buyers more prone to purchase a car with bet
 
 One such factor is the **weight** of the car. While it is generally understood that heavier cars will experience fewer MPG, there is little understanding of how much an increase in weight will lead to a decrease MPG. By understanding this relationship, manufacturers will be able to perform a cost--benefit analysis that will assist them in their vehicle production.
 
-The MPG data set contains measurements of the **weight (column 1)** (in pounds) and **MPG (column 2)** of 289 cars. Download the MPGData.txt file from Canvas, and put it in the same folder as this R Markdown file. Now, read in the data set, take a look at the top few rows, and look at a summary of the data.  
+The MPG data set contains measurements of the **weight (column 1)** (in pounds) and **MPG (column 2)** of 289 cars. Download the MPGData.txt file from Canvas, and put it in the same folder as this R Markdown file. Now, read in the data set, take a look at the top few rows, and look at a summary of the data.
 
-```{r}
+```
 cars <- read.csv(file = "MPGData.txt", sep = " ", header = TRUE)
 head(cars)
 summary(cars)
@@ -35,11 +32,11 @@ summary(cars)
 # analysis steps
 ```
 
-## Scatterplot
+### Scatterplot
 
-#### Create a scatterplot of the data with variables on the appropriate axes. What do you observe?
+**Create a scatterplot of the data with variables on the appropriate axes. What do you observe?**
 
-```{r, fig.align='center'}
+```
 cars.base.plot <- ggplot(data = cars, aes(x = Weight, y = MPG)) + 
   geom_point() + 
   xlab("Weight (pounds)") +
@@ -54,35 +51,31 @@ cars.base.plot <- ggplot(data = cars, aes(x = Weight, y = MPG)) +
 # to the homework rules
 ```
 
-Heavier cars generally have lower fuel efficiency.  The relationship is fairly strong,
-although there is noticeable variability in MPG for cars with similar weights.  For example,
-there are cars weighing around 3000 pounds with similar fuel efficiency levels as 
-other cars weighing around 2000 pounds.
+Heavier cars generally have lower fuel efficiency. The relationship is fairly strong, although there is noticeable variability in MPG for cars with similar weights. For example, there are cars weighing around 3000 pounds with similar fuel efficiency levels as other cars weighing around 2000 pounds.
 
-## Correlation Coefficient 
+### Correlation Coefficient
 
-#### Report the correlation coefficient for the two variables. How would you interpret this number?
+**Report the correlation coefficient for the two variables. How would you interpret this number?**
 
-```{r}
+```
 r <- with(cars, cor(Weight, MPG))
 r
 # hint: use the cor() function
 ```
 
-The negative correlation reflects the observation above the ligher cars tend to be 
-more fuel efficient.  As the correlation is not very close to one, the relationship 
-between the two quantities is not extremely well approximated by a straight line, however.
+The negative correlation reflects the observation above the ligher cars tend to be more fuel efficient. As the correlation is not very close to one, the relationship between the two quantities is not extremely well approximated by a straight line, however.
 
-## Linear Regression
+### Linear Regression
 
 The simple linear regression model is
+
 $$
 \text{MPG}_i = \beta_0 + \beta_1\text{Weight}_i + \epsilon_i, \quad E(\epsilon_i) = 0.
 $$
 
-#### Without using the function <tt> lm </tt>, fit the linear regression to the data, i.e. obtain the OLS estimates for the intercept and slope. How would you interpret the coefficient for the slope? For the intercept?
+**Without using the function lm , fit the linear regression to the data, i.e. obtain the OLS estimates for the intercept and slope. How would you interpret the coefficient for the slope? For the intercept?**
 
-```{r}
+```
 ## Very tedious way
 xbar <- mean(cars$Weight); ybar <- mean(cars$MPG)
 Sxx <- with(cars, sum((Weight - xbar)^2))
@@ -102,17 +95,16 @@ b1 <- Sxy/Sxx; b0 <- ybar - b1*xbar
 ```
 
 The fitted regression model is
+
 $$
 \widehat{\text{MPG}}_i = 51.5872 - 0.0098*\text{Weight}_i
 $$
-The slope indicates that for every 100 lb increase in weight, the average fuel 
-efficiency decreases by almost one mile per gallon.  The slope does not have any
-practical meaning, as it would technically represent the average MPG for a weightless 
-car.
 
+The slope indicates that for every 100 lb increase in weight, the average fuel efficiency decreases by almost one mile per gallon. The slope does not have any practical meaning, as it would technically represent the average MPG for a weightless car.
 
-#### Now, use the <tt> lm </tt> function to fit the model.  Verify that the estimates match yours from above.
-```{r}
+**Now, use the lm function to fit the model. Verify that the estimates match yours from above.**
+
+```
 cars.lm <- lm(MPG ~ Weight, data = cars)
 cars.lm$coefficients
 # hint: use the lm() function with the formula argument looking like this:
@@ -121,9 +113,9 @@ cars.lm$coefficients
 # Save the lm output to a variable and print it to see the coefficient estimates.
 ```
 
-#### Add the OLS regression line to the scatterplot.
+**Add the OLS regression line to the scatterplot.**
 
-```{r, fig.align='center'}
+```
 # <your code here> 
 # hint: you can save the scatterplot you made above to a variable, call it 
 # cars.base.plot. Then, add the regression line to the plot with the following
@@ -131,9 +123,9 @@ cars.lm$coefficients
    cars.base.plot + geom_smooth(method = "lm", se = FALSE) 
 ```
 
-#### Calculate the fitted values $\hat{Y}_i$ for values $x_i$ in the data set *"by hand"* (using R, not just pulling them from the model output) - do your calculations match the values in the <tt> fitted.values </tt> field of the <tt> lm </tt> fit?
+**Calculate the fitted values $\hat{Y}\_i$ for values $x\_i$ in the data set **_**"by hand"**_** (using R, not just pulling them from the model output) - do your calculations match the values in the fitted.values field of the lm fit?**
 
-```{r}
+```
 cars$MPGhat <- b0 + b1*cars$Weight
 # find the largest absolute difference
 max(abs(cars$MPGhat - cars.lm$fitted.values))
@@ -143,9 +135,9 @@ max(abs(cars$MPGhat - cars.lm$fitted.values))
 
 The fitted values have slight differences, but are all very near zero.
 
-#### What estimate does the model provide for the average MPG of cars weighing 2300 pounds?
+**What estimate does the model provide for the average MPG of cars weighing 2300 pounds?**
 
-```{r}
+```
 predict(cars.lm, newdata = data.frame(Weight = 2300))
 # hint: the predict() function uses the fitted linear model to make 
 # predictions (recall that we use the same quantity to estimate the mean and predict): 
@@ -156,9 +148,9 @@ predict(cars.lm, newdata = data.frame(Weight = 2300))
 
 The predicted MPG is 28.97 for a 2300 lb car.
 
-#### Compute the **residuals** $e_i = \hat{Y}_i - Y_i$ and use these to obtain the quantities $\mathrm{MSE}$ and $R^2$ defined in the course notes.  Give an interpretation of these last two quantities in terms of the variability of fuel efficiency.  
+**Compute the residuals $e\_i = \hat{Y}\_i - Y\_i$ and use these to obtain the quantities $\mathrm{MSE}$ and $R^2$ defined in the course notes. Give an interpretation of these last two quantities in terms of the variability of fuel efficiency.**
 
-```{r}
+```
 resid <- cars$MPG - cars$MPGhat
 MSE <- sum(resid^2)/(nrow(cars) - 2)
 MSE
@@ -166,11 +158,8 @@ Rsq <- r^2
 Rsq
 ```
 
-The MSE value of 22.3 reflects the variability that is left unexplained, i.e. the average
-variability of the observations about the fitted regression line.  The $R^2$ value of
-$0.505$ indicates that just over half of the variability in MPG values can be explained
-by a linear relationship with weight.
+The MSE value of 22.3 reflects the variability that is left unexplained, i.e. the average variability of the observations about the fitted regression line. The $R^2$ value of $0.505$ indicates that just over half of the variability in MPG values can be explained by a linear relationship with weight.
 
-## Summary and Conclusions
+### Summary and Conclusions
 
-*Always* start by plotting your data (exploratory data analysis: view data, create scatterplot, summarize data, etc.) before jumping into an analysis or fitting a model. We saw MPG and Weight looked to be linearly associated, so we chose to look at the correlation coefficient and then fit a simple linear regression model to the data. Make sure you know how to interpret the model coefficients!
+_Always_ start by plotting your data (exploratory data analysis: view data, create scatterplot, summarize data, etc.) before jumping into an analysis or fitting a model. We saw MPG and Weight looked to be linearly associated, so we chose to look at the correlation coefficient and then fit a simple linear regression model to the data. Make sure you know how to interpret the model coefficients!
