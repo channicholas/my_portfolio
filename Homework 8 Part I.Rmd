@@ -1,0 +1,159 @@
+---
+title: "Homework 8 - Part 1"
+subtitle: <center> <h1>Logistic Regression</h1> </center>
+author: <center> < Nicholas Chan > <center>
+output: html_document
+---
+
+<style type="text/css">
+h1.title {
+font-size: 40px;
+text-align: center;
+}
+</style>
+
+```{r setup, include=FALSE}
+library(glmnet)
+library(ggplot2)
+library(corrplot)
+library(tidyverse)
+library(car)  # needed for VIFs
+library(MASS) # for stepAIC function
+library(leaps) # needed for best subsets
+library(glmnet)  # for ridge, lasso, and elastic net
+sz <- 15
+```
+
+## Data and Description
+
+**NOTE: For this assignment, you do not need to make your graphs/plots look "pretty", meaning you do not need to worry about changing the axis limits, relabeling axes, etc.**
+
+Type 2 diabetes is a problem with the body that causes blood sugar levels to rise higher than normal (hyperglycemia) because the body does not use insulin properly. Specifically, the body cannot make enough insulin to keep blood sugar levels normal. Type 2 diabetes is associated with various health complications such as neuropathy (nerve damage), glaucoma, cataracts and various skin disorders. Early
+detection of diabetes is crucial to proper treatment so as to alleviate complications.
+
+The data set contains information on 392 randomly selected women who are at risk for diabetes. The data set contains the following variables:
+
+Variable  | Description
+--------- | -------------
+pregnant  | Number of times pregnant
+glucose   | Plasma glucose concentration at 2 hours in an oral glucose tolerance test
+diastolic | Diastolic blood pressure (mm Hg)
+triceps   | Triceps skin fold thickness (mm)
+insulin   | 2 hour serum insulin (mu U/ml)
+bmi       | Body mass index ($kg/m^2$, mass in kilograms divided by height in meters-squared)
+pedigree  | Numeric strength of diabetes in family line (higher numbers mean stronger history)
+age       | Age
+diabetes  | Does the patient have diabetes (0 if "No", 1 if "Yes")
+
+The data can be found in the Diabetes data set on Canvas. Download Diabetes.txt, and put it in the same folder as this R Markdown file.
+
+#### 0. Replace the text "< PUT YOUR NAME HERE >" (above next to "author:") with your full name.
+
+#### 1. Read in the data set, and call the data frame "dia".  
+
+```{r}
+dia <- read.csv("Data/Diabetes.txt", header = TRUE, sep=" ")
+```
+
+#### 2. Convert the response variable to a factor by using `as.factor` to override the current response column in the data set.
+
+```{r}
+dia$diabetes <- as.factor(dia$diabetes)
+```
+
+#### 3. Explore the data: create a jittered scatterplot for each predictor. (Note: you do not need to make these graphs look professional.) Describe any clear relationships that you see.
+
+```{r, fig.align='center'}
+ggplot(data = dia, mapping =aes(x = pregnant, y=diabetes))+
+  geom_point( position = "jitter")
+ggplot(data = dia, mapping =aes(x = glucose, y=diabetes))+
+  geom_point( position = "jitter")  
+ggplot(data = dia, mapping =aes(x = diastolic, y=diabetes))+
+  geom_point( position = "jitter")
+ggplot(data = dia, mapping =aes(x = triceps, y=diabetes))+
+  geom_point( position = "jitter")
+ggplot(data = dia, mapping =aes(x = insulin, y=diabetes))+
+  geom_point( position = "jitter")
+ggplot(data = dia, mapping =aes(x = bmi, y=diabetes))+
+  geom_point( position = "jitter")
+ggplot(data = dia, mapping =aes(x = pedigree, y=diabetes))+
+  geom_point( position = "jitter")
+ggplot(data = dia, mapping =aes(x = age, y=diabetes))+
+  geom_point( position = "jitter")
+```
+
+One relationship that seems clear is those with higher glucose levels have a higher proportion of having diabetes.
+
+#### 4. Briefly explain why traditional multiple linear regression methods are not suitable for *this* data set. 
+
+Traditional multiple linear regression is for a response with a continuous random variable. However, here we have a random variable that is binary which makes traditional methods unsuitable.
+
+#### 5. Write out the three components (random, systematic, and link) of the logistic regression model for this data set using all predictors. You should use parameters/Greek letters like $\theta$, $\beta$, and $\eta$ and not any fixed numeric values.  
+
+$$
+\text{Number of Diabetics}_i \text{~} \text{Bin(Number of Patients,
+}\theta_i\text{)}\\
+\eta_i = \beta_0 + \beta_1 * \text{Pregnant}_i + \beta_2 * \text{Glucose}_i +
+\beta_3 * \text{Diastolic}_i + \beta_4 * \text{Triceps}_i +
+\beta_5 * \text{Insulin}_i + \beta_6 * \text{BMI}_i +
+\beta_7 * \text{Pedigree}_i +\beta_8 * \text{Age}_i \\
+\eta_i = g(\theta_i) = logit(\theta_i)
+$$
+
+#### 6. Fit the logistic regression model and print a summary of the results.  Also, check the variance inflation factors.  Does multicollinearity appear to be a significant issue for this model?
+
+```{r, fig.align='center'}
+diafit <- glm(diabetes ~., data = dia, family = binomial(link = 'logit'))
+summary(diafit)
+vif(diafit)
+```
+No, multicolinearity does not appear to be a problem in this model, because the highest variation factor is still below 2, which is small.
+
+#### 7. For the coefficient for bmi, compute (and output) the log odds ratio ($\beta_{bmi}$, pull this value from the model output) and odds ratio ($\exp\{\beta_{bmi}\}$). Provide an interpretation of these quantities.
+
+```{r, fig.align='center'}
+diafit$coefficients[7]
+exp(diafit$coefficients[7])
+```
+We estimate that the average increase likelihood of diabetes in women is multiplied by a log odds factor of 0.0705 for every 1 unit increase in bmi, assuming the women has the same pregnancy status, has the same glucose level, has the same Diastolic blood pressure, has the same Triceps skin fold thickness, has the same insulin level, is the same age and the same Numeric strength of diabetes in family line.
+
+We estimate that the average increase likelihood of diabetes in women is multiplied by a factor of 1.073 for every 1 unit increase in bmi, assuming the women has the same pregnancy status, has the same glucose level, has the same Diastolic blood pressure, has the same Triceps skin fold thickness, has the same insulin level, is the same age and the same Numeric strength of diabetes in family line.
+
+#### 8. Create (and output) 95% confidence intervals for $\beta_j$ and $\exp\{\beta_j\}$ for all predictors using the `confint` function.  Provide an interpretation of both types of confidence intervals for the coefficient corresponding to glucose.
+
+```{r, fig.align='center'}
+confint(diafit,parm = c(2:9))
+exp(confint(diafit,parm = c(2:9)))
+```
+
+We are 95% confident that for each 1 unit increase in glucose, the likelihood of diabetes in women is multiplied by a log-odds factor between the interval 0.027 to 0.050, assuming the women has the same pregnancy status, has the same bmi level, has the same Diastolic blood pressure, has the same Triceps skin fold thickness, has the same insulin level, is the same age and the same Numeric strength of diabetes in family line.
+
+We are 95% confident that for each 1 unit increase in glucose, the likelihood of diabetes in women is multiplied by a factor between the interval 1.028 to 1.051, assuming the women has the same pregnancy status, has the same bmi level, has the same Diastolic blood pressure, has the same Triceps skin fold thickness, has the same insulin level, is the same age and the same Numeric strength of diabetes in family line.
+
+#### 9. Calculate a 95% confidence interval for the predicted probability that a patient has diabetes where pregnant = 1, glucose = 90, diastolic = 62, triceps = 18, insulin = 59, bmi = 25.1, pedigree = 1.268 and age = 25. *Do you think this patient has diabetes? Why or why not?*
+
+```{r, eval=FALSE}
+LogOdds <- predict(diafit,newdata = data.frame(pregnant = 1, glucose = 90,
+                                               diastolic = 62, triceps = 18,
+                                               insulin = 59, bmi = 25.1,
+                                               pedigree = 1.268,age = 25)
+                   , type = "link", se.fit = TRUE)
+LogOddsCI <- LogOdds$fit + c(-1, 1)*qnorm(.975)*LogOdds$se.fit
+round(1 / (1 + exp(-LogOddsCI)), 4)
+
+```
+
+I don't, because we are 95% confident that the true probability that someone, with those levels in the predictors lies within the interval 0.0369 to 0.1818. Since the probability is low, it is improbable that the patient has diabetes.
+
+#### 10. Test the hypothesis that none of the predictors have any effect on the probablity of being diabetic (the global effects test).  Report a p-value and your conclusion.
+
+```{r, fig.align='center'}
+nullFit <- glm(diabetes ~ 1, data = dia, family = binomial(link = 'logit'))
+anova(nullFit, diafit, test = "Chisq")
+```
+
+We got a p-value of `2.2e-16` which is less than .05, so we reject the null hypothesis and conclude that there is at least one predictor that is significant in estimating the probability diabetes in women.
+
+#### 11. Briefly summarize (1) the purpose of this data set and analysis and (2) what you learned about this data set from your analysis. Write your response as if you were addressing a non-statistician (do not include any numbers or software output).
+
+In this data set we learned how to make a model to predict and estimate for a variable that only has two outcomes and is not continuous. We learned how to make sure it is a good model and interpret our results of different tests.

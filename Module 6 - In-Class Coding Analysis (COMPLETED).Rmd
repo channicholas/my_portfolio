@@ -1,0 +1,195 @@
+---
+title: "Module 6 - Variable Selection and Regularization"
+subtitle: <center> <h1>In-Class Analysis</h1> </center>
+output: html_document
+---
+
+<style type="text/css">
+h1.title {
+font-size: 40px;
+text-align: center;
+}
+</style>
+
+```{r setup, include=FALSE}
+# load packages here
+library(tidyverse)
+library(car)  # needed for VIFs
+library(MASS) # for stepAIC function
+library(leaps) # needed for best subsets
+library(glmnet)  # for ridge, lasso, and elastic net
+sz <- 15
+set.seed(12345)  # DO NOT CHANGE - this sets your seed for cross validation!
+```
+
+## Data and Description
+
+Environmental impact studies seek to identify and quantify the affect of environmental conditions on human and ecological health. For example, extreme heat poses a threat to public health by creating conditions conducive to hyperthermia. Likewise, extreme cold poses a threat to public health via conditions suitable to hypothermia. Extreme weather events (tornados, typhoons, etc.) also pose an obvious threat to public health. A less understood environmental variable that, hypothetically, may also pose a threat to public health is the concentration of pollution (air quality).
+
+In an effort to understand the impact of the environment on human health, the data set "EnvironmentalImpacts.txt" (found on Canvas) contains environmental and socio-economic information for 60 different cities in the U.S. The collected variables are given in the table below.
+
+Variable       | Description
+-------------- | -------------
+AnnPrecip      | Average annual precipitation
+MeanJanTemp    | Average January temperature (in degrees Fahrenheit)
+MeanJulyTemp   | Average July temperature (in degrees Fahrenheit)
+PctGT65        | Percent of population greater than 65 years old
+PopPerHouse    | Population per household
+School         | Median school years completed
+PctSound       | Percent of housing units that are "sound"
+PopPerSqMile   | Population per square mile
+PctNonWhite    | Percent of population that is nonwhite
+PctWhiteCollar | Percent of employment in white-collar jobs
+PctU20000      | Percent of families with income under $20,000
+Hydrocarbons   | Relative pollution potential of hydrocarbons
+Nitrogen       | Relative pollution potential of oxides in nitrogen
+SO2            | Relative pollution potential of oxides in sulfur dioxide
+RelHumid       | Annual average relative humidity
+AAMort         | Age-adjusted mortality
+
+The goal of this analysis is to determine which, if any, of the above environmental and socioeconomic variables contributed to the mortality rate.
+
+Do the following:
+
+1. Download the "EnvironmentalImpacts.txt" file from Canvas and put it in the same folder as this R Markdown file.
+2. Read in the data set, call it "env", and take a look at the top few rows.
+
+```{r}
+env <- read.csv("EnvironmentalImpacts.txt", header = TRUE, sep = " ")
+head(env)
+```
+
+## Fit a multiple linear regression model using all variables in the data set. Look at a summary of the results as well as the variance inflaction factors, and explain why variable selection and/or shrinkage would be useful for this data set.
+
+Hint: use the `lm` function with your formula looking something like `y ~ .`, where the `.` includes all variables (excluding y) in the data set as predictors.
+
+```{r, fig.align='center'}
+env.lm <- lm(AAMort ~ ., data = env)
+summary(env.lm)
+vif(env.lm)
+```
+
+There are some very large variance inflation factors, specifically for `log.Hydro` and `log.Nit`, that indicate model selection or shrinkage methods may be helpful, since these have the potential to reduce variability in coefficient estimates.
+
+### Start by checking all possible subsets ("best subsets" method) of the full model you created above. Use the `regsubsets` function from the `leaps` package to determine the best model of each size.
+
+```{r, fig.align='center'}
+env.bs <- regsubsets(AAMort ~ ., data = env, nvmax = ncol(env) - 1)
+summary(env.bs)
+```
+
+#### Plot the BIC values from the best model of each size. According to this plot, how many and which variables should be included as predictors in the model?
+
+```{r, fig.align='center'}
+plot(env.bs, method = 'bic')
+```
+
+We should incude the following 5 predictors: `AnnPrecip`, `MeanJanTemp`, `School`, `PctNonWhite`, and `log.Nit`.
+
+
+#### Apply stepwise selection (i.e., at each step, consider both adding and removing predictors). Use the AIC as the selection criteria, and begin the search with the full model.
+
+```{r, fig.align='center'}
+s = ~ 1 # smallest model is the one with just an intercept, i.e. no predictors
+f = ~ AnnPrecip + MeanJanTemp + MeanJulyTemp + PctGT65 + PopPerHouse + School + PctSound +
+      PopPerSqMile + PctNonWhite + PctWhiteCollar + PctU20000 + log.Hydro + log.Nit + 
+      log.SO2 + RelHumid
+stepAIC(env.lm, direction = 'both', scope = c(lower = s, upper = f))
+```
+
+#### Repeat the previous part, but begin the search with the empty model.
+
+```{r, fig.align='center'}
+stepAIC(lm(AAMort ~ 1, data = env), direction = 'both', scope = c(lower = s, upper = f))
+```
+
+
+#### Now apply backward selection. Use the BIC as the selection criteria.
+
+```{r, fig.align='center'}
+n = nrow(env)
+stepAIC(env.lm, direction = 'backward', scope = c(lower = s, upper = f), k = log(n))
+```
+
+#### Do any of the three previous models (stepwise beginning with full model, stepwise beginning with empty model, and backward selection) coincide with the best model of its size (as determined by `regsubsets`)?  If not, provide an explanation as to why this could happen.
+
+```{r}
+summary(env.bs)$which
+```
+
+Yes, all of the models selected by the above stepwise methods coincide with the best model with 9 predictors.  In general, this needn't be the case since, for a given number of predictors, stepwise selection only ends up assessing some of the possible models, and thus may not choose the best one of these.
+
+## Use ridge regression to estimate the coefficients in the model, instead of OLS.
+
+### (a) Use 10-fold cross validation with 50 repeats to choose an optimal value for $\lambda$.  **Note: For this assignment, just use the grid of $\lambda$ values that the `cv.glmnet` function computes for you.  In practice, you should make sure to check that the chosen grid is a good one, meaning that the minimum error (found in the `cvm` variable) does not happen at the beginning or end of the grid.  If this happens, you should create a new grid with better values and try again.**
+
+```{r}
+## Uncomment the code below
+X <- as.matrix(env[,-ncol(env)]) # response is in the last column
+y <- env$AAMort
+envRidge <- glmnet(x = X, y = y, alpha = 0)
+
+R <- 50
+err <- matrix(0, nrow = R, ncol = length(envRidge$lambda)) # empty matrix to store CV errors
+folds <- matrix(0, nrow = R, ncol = nrow(env)) # store fold assignments
+
+for(r in 1:R){
+  tmp <- cv.glmnet(x = X, y = y, alpha = 0, lambda = envRidge$lambda, nfolds = 10, keep = TRUE)
+  err[r, ] <- tmp$cvm
+  folds[r, ] <- tmp$foldid
+}
+```
+
+
+### (b) Using the best value of $\lambda$, obtain ridge regression estimates of the coefficients.  Use these to compute fitted values for all observations.
+
+```{r}
+## Find the best lambda value - uncomment code below
+lambda.ridge <- envRidge$lambda[which.min(colMeans(err))]
+ridge.opt <- glmnet(x = X, y = y, alpha = 0, lambda = lambda.ridge)
+beta.ridge <- ridge.opt$beta
+b0.ridge <- ridge.opt$a0
+beta.ridge
+
+ridge.fit <-  matrix(b0.ridge, nrow = nrow(env), ncol = 1) + X%*%matrix(beta.ridge, ncol = 1)
+```
+
+## Repeat the previous parts, but using LASSO instead of ridge regression
+
+```{r}
+## Uncomment the code below
+envLasso <- glmnet(x = X, y = y, alpha = 1)
+
+err <- matrix(0, nrow = R, ncol = length(envLasso$lambda)) # empty matrix to store CV errors
+
+for(r in 1:R){
+  tmp <- cv.glmnet(x = X, y = y, alpha = 1, lambda = envLasso$lambda, foldid = folds[r, ])
+  err[r, ] <- tmp$cvm
+}
+
+## Find the best lambda value
+lambda.lasso <- envLasso$lambda[which.min(colMeans(err))]
+lasso.opt <- glmnet(x = X, y = y, alpha = 1, lambda = lambda.lasso)
+beta.lasso <- lasso.opt$beta
+b0.lasso <- lasso.opt$a0
+
+lasso.fit <- matrix(b0.lasso, nrow = nrow(env), ncol = 1) + X%*%matrix(beta.lasso, ncol = 1)
+```
+
+## Compare the coefficient estimates for the models below. Do you see any substantial differences?  If so, provide some comments about these differences.
+
+* OLS with all predictors
+* OLS with a subset of predictors obtained from one of the variable selection procedures above.
+* Ridge
+* LASSO
+
+```{r}
+beta.ols <- env.lm$coefficients[-1]
+beta.olsBest <- envBest.lm$coefficients[-1]
+beta.olsBest <- ifelse(names(beta.ols) %in% names(beta.olsBest), beta.olsBest, 0)
+coefMat <- cbind(beta.ols, beta.olsBest, beta.ridge, beta.lasso)
+colnames(coefMat) <- c('OLS', 'OLS_best', 'Ridge', 'LASSO')
+coefMat
+```
+
+Overall, the shrinkage methods provide estimates that are smaller in magnitude than OLS.  The biggest differences are in fact between the two different OLS fits, caused by multicollinearity between the predictors.  In some cases, the shrinkage estimates also make more sense.  For example, higher pollution potential represented by larger values of `log.Nit` and `log.SO2` should be associated with worse mortality (higher `AAMort` values), but some of the OLS estimates are negative for these values.
